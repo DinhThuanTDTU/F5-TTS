@@ -177,8 +177,14 @@ def main():
         last_per_updates=args.last_per_updates,
         bnb_optimizer=args.bnb_optimizer,
     )
-    if args.exp_name == "F5TTS_Small" and not args.finetune:
-        trainer.skip_loading = True
+    if args.exp_name == "F5TTS_Small":
+        # Only skip loading if we're doing a fresh start (no existing checkpoints)
+        checkpoint_exists = os.path.exists(checkpoint_path) and any(
+            f.endswith(".pt") for f in os.listdir(checkpoint_path)
+        )
+
+        # Skip loading only if there are no checkpoints or if explicitly requested
+        trainer.skip_loading = not checkpoint_exists
 
     train_dataset = load_dataset(args.dataset_name, tokenizer, mel_spec_kwargs=mel_spec_kwargs)
 
