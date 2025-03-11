@@ -23,16 +23,16 @@ from f5_tts.model.utils import seed_everything
 
 class F5TTS:
     def __init__(
-        self,
-        model_type="F5-TTS",
-        ckpt_file="",
-        vocab_file="",
-        ode_method="euler",
-        use_ema=True,
-        vocoder_name="vocos",
-        local_path=None,
-        device=None,
-        hf_cache_dir=None,
+            self,
+            model_type="F5-TTS",
+            ckpt_file="",
+            vocab_file="",
+            ode_method="euler",
+            use_ema=True,
+            vocoder_name="vocos",
+            local_path=None,
+            device=None,
+            hf_cache_dir=None,
     ):
         # Initialize parameters
         self.final_wave = None
@@ -67,7 +67,10 @@ class F5TTS:
         self.vocoder = load_vocoder(vocoder_name, local_path is not None, local_path, self.device, hf_cache_dir)
 
     def load_ema_model(self, model_type, ckpt_file, mel_spec_type, vocab_file, ode_method, use_ema, hf_cache_dir=None):
-        if model_type == "F5-TTS":
+        # Normalize model type to handle both hyphen and underscore formats
+        model_type_normalized = model_type.replace('_', '-').upper()
+
+        if model_type_normalized == "F5-TTS" or model_type in ["F5TTS_Base", "F5TTS-Base"]:
             if not ckpt_file:
                 if mel_spec_type == "vocos":
                     ckpt_file = str(
@@ -79,13 +82,20 @@ class F5TTS:
                     )
             model_cfg = dict(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4)
             model_cls = DiT
-        elif model_type == "E2-TTS":
+        elif model_type_normalized == "E2-TTS" or model_type in ["E2TTS_Base", "E2TTS-Base"]:
             if not ckpt_file:
                 ckpt_file = str(
                     cached_path("hf://SWivid/E2-TTS/E2TTS_Base/model_1200000.safetensors", cache_dir=hf_cache_dir)
                 )
             model_cfg = dict(dim=1024, depth=24, heads=16, ff_mult=4)
             model_cls = UNetT
+        elif model_type == "F5TTS_Small" or model_type == "F5TTS-Small":
+            # Add support for F5TTS_Small model type
+            if not ckpt_file:
+                # If there's a default checkpoint for F5TTS_Small, you can add it here
+                pass
+            model_cfg = dict(dim=768, depth=18, heads=12, ff_mult=2, text_dim=512, conv_layers=4)
+            model_cls = DiT
         else:
             raise ValueError(f"Unknown model type: {model_type}")
 
@@ -106,23 +116,23 @@ class F5TTS:
         save_spectrogram(spect, file_spect)
 
     def infer(
-        self,
-        ref_file,
-        ref_text,
-        gen_text,
-        show_info=print,
-        progress=tqdm,
-        target_rms=0.1,
-        cross_fade_duration=0.15,
-        sway_sampling_coef=-1,
-        cfg_strength=2,
-        nfe_step=32,
-        speed=1.0,
-        fix_duration=None,
-        remove_silence=False,
-        file_wave=None,
-        file_spect=None,
-        seed=-1,
+            self,
+            ref_file,
+            ref_text,
+            gen_text,
+            show_info=print,
+            progress=tqdm,
+            target_rms=0.1,
+            cross_fade_duration=0.15,
+            sway_sampling_coef=-1,
+            cfg_strength=2,
+            nfe_step=32,
+            speed=1.0,
+            fix_duration=None,
+            remove_silence=False,
+            file_wave=None,
+            file_spect=None,
+            seed=-1,
     ):
         if seed == -1:
             seed = random.randint(0, sys.maxsize)
